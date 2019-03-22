@@ -22,8 +22,8 @@ setuptools.setup(
     packages=["bocadillo"],
     package_data={"bocadillo": ["assets/*"]},
     install_requires=[
-        "starlette>=0.11, <0.12",
-        "uvicorn>=0.5.1, <0.6",
+        "starlette>=0.12.0.b1, <0.13",
+        "uvicorn>=0.7.0.b1, <0.8",
         "jinja2>=2.10",
         "whitenoise",
         "requests",

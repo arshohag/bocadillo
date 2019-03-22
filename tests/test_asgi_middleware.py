@@ -16,10 +16,10 @@ def test_asgi_middleware(app: App, client):
             params = kwargs
             received_app = isinstance(app, App)
 
-        def __call__(self, scope):
+        async def __call__(self, scope, receive, send):
             nonlocal called
             called = True
-            return super().__call__(scope)
+            return await super().__call__(scope, receive, send)
 
     app.add_asgi_middleware(Middleware, hello="world")
     assert received_app
@@ -43,10 +43,10 @@ def test_pure_asgi_middleware(app: App, client):
             self.inner = inner
             initialized = True
 
-        def __call__(self, scope: dict):
+        async def __call__(self, scope, receive, send):
             nonlocal called
             called = True
-            return self.inner(scope)
+            return await self.inner(scope, receive, send)
 
     app.add_asgi_middleware(Middleware)
 

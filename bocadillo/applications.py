@@ -2,7 +2,6 @@ import inspect
 import os
 import re
 import warnings
-from functools import partial
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -19,14 +18,13 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
-from starlette.middleware.wsgi import WSGIResponder
+from starlette.middleware.wsgi import WSGIMiddleware
 from starlette.routing import Lifespan
 from uvicorn.main import run
 
 from .app_types import (
     _E,
     ASGIApp,
-    ASGIAppInstance,
     ErrorHandler,
     EventHandler,
     Receive,
@@ -459,7 +457,7 @@ class App(RoutingMixin, metaclass=DocsMeta):
         self._lifespan.add_event_handler(event, handler)
         return handler
 
-    async def dispatch_http(self, receive: Receive, send: Send, scope: Scope):
+    async def dispatch_http(self, scope: Scope, receive: Receive, send: Send):
         req = Request(scope, receive)
         res = Response(
             req,
@@ -468,17 +466,17 @@ class App(RoutingMixin, metaclass=DocsMeta):
         )
 
         res: Response = await self.server_error_middleware(req, res)
-        await res(receive, send)
+        await res(scope, receive, send)
         # Re-raise the exception to allow the server to log the error
         # and for the test client to optionally re-raise it too.
         self.server_error_middleware.raise_if_exception()
 
     async def dispatch_websocket(
-        self, receive: Receive, send: Send, scope: Scope
+        self, scope: Scope, receive: Receive, send: Send
     ):
         await self.websocket_router(scope, receive, send)
 
-    def dispatch(self, scope: Scope) -> ASGIAppInstance:
+    async def dispatch(self, scope: Scope, receive: Receive, send: Send):
         with self._app_providers():
             path: str = scope["path"]
 
@@ -490,20 +488,21 @@ class App(RoutingMixin, metaclass=DocsMeta):
                 # to the mounted app's point of view.
                 scope["path"] = path[len(prefix) :]
                 try:
-                    return app(scope)
+                    return await app(scope, receive, send)
                 except TypeError:
-                    return WSGIResponder(app, scope)
+                    wsgi = WSGIMiddleware(app)
+                    return await wsgi(scope, receive, send)
 
             if scope["type"] == "websocket":
-                return partial(self.dispatch_websocket, scope=scope)
+                return await self.dispatch_websocket(scope, receive, send)
 
             assert scope["type"] == "http"
-            return partial(self.dispatch_http, scope=scope)
+            return await self.dispatch_http(scope, receive, send)
 
-    def __call__(self, scope: Scope) -> ASGIAppInstance:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
         if scope["type"] == "lifespan":
-            return self._lifespan(scope)
-        return self.asgi(scope)
+            return await self._lifespan(scope, receive, send)
+        return await self.asgi(scope, receive, send)
 
     def run(
         self,
