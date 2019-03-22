@@ -64,7 +64,7 @@ def _get_module(script_path: str) -> Optional[str]:  # pragma: no cover
 class App(RoutingMixin, metaclass=DocsMeta):
     """The all-mighty application class.
 
-    This class implements the [ASGI](https://asgi.readthedocs.io) protocol.
+    This class implements the [ASGI3](https://asgi.readthedocs.io) interface.
 
     [CORSMiddleware]: https://www.starlette.io/middleware/#corsmiddleware
     [SessionMiddleware]: https://www.starlette.io/middleware/#sessionmiddleware
@@ -413,13 +413,24 @@ class App(RoutingMixin, metaclass=DocsMeta):
         """Register an ASGI middleware class.
 
         # Parameters
-        middleware_cls: a class that complies with the ASGI specification.
+        middleware_cls: a class that complies with the ASGI3 specification.
 
         # See Also
         - [ASGI middleware](../guides/agnostic/asgi-middleware.md)
         - [ASGI](https://asgi.readthedocs.io)
         """
         args = (self,) if issubclass(middleware_cls, ASGIMiddleware) else ()
+
+        if hasattr(middleware_cls, "__call__"):
+            # Verify the class implements ASGI3, not ASGI2.
+            sig = inspect.signature(middleware_cls.__call__)
+            if "receive" not in sig.parameters or "send" not in sig.parameters:
+                raise ValueError(
+                    f"ASGI middleware class {middleware_cls.__name__} "
+                    "seems to be using the old ASGI2 interface. "
+                    "Please upgrade to ASGI3: (scope, receive, send) -> None"
+                )
+
         self.asgi = middleware_cls(self.asgi, *args, **kwargs)
 
     def on(self, event: str, handler: Optional[EventHandler] = None):

@@ -104,3 +104,19 @@ def test_middleware_called_if_routed_to_sub_app(
     else:  # allowed origin -> allow-origin header"
         assert "access-control-allow-origin" in res.headers
         assert res.headers.get("access-control-allow-origin") == expected
+
+
+def test_asgi2_middleware_not_supported(app: App):
+    class Middleware:
+        def __init__(self, inner):
+            pass
+
+        def __call__(self, scope):
+            pass
+
+    with pytest.raises(ValueError) as ctx:
+        app.add_asgi_middleware(Middleware)
+
+    error = str(ctx.value)
+    for phrase in "ASGI2", "please upgrade", "ASGI3", "scope, receive, send":
+        assert phrase.lower() in error.lower()
