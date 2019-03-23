@@ -30,12 +30,13 @@ from .app_types import (
     Send,
 )
 from .compat import WSGIApp, nullcontext
-from .constants import CONTENT_TYPE, DEFAULT_CORS_CONFIG
+from .constants import CONTENT_TYPE
 from .error_handlers import error_to_text
 from .errors import HTTPError, HTTPErrorMiddleware, ServerErrorMiddleware
 from .injection import _STORE
 from .media import UnsupportedMediaType, get_default_handlers
 from .meta import DocsMeta
+from .misc import get_members
 from .middleware import ASGIMiddleware
 from .plugins import (
     Plugin,
@@ -49,7 +50,6 @@ from .plugins import (
 from .request import Request
 from .response import Response
 from .routing import RoutingMixin
-from .settings import create_settings
 from .staticfiles import WhiteNoise
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -422,8 +422,10 @@ class App(RoutingMixin, metaclass=DocsMeta):
             given `kwargs`.
         **kwargs (any): arbitrary settings, case-insensitive.
         """
-        if settings is None:
-            settings = create_settings(**kwargs)
+        if settings is not None:
+            settings = get_members(settings)
+        else:
+            settings = kwargs
 
         for plugin in self.plugins:
             plugin(self, settings)

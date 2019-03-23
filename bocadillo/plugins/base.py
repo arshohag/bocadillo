@@ -1,7 +1,7 @@
 import re
 import inspect
-from functools import partial
-from typing import Any, Callable, Dict, Optional
+from functools import partial, update_wrapper
+from typing import Any, Callable, Dict, Union, Optional
 
 PLUGIN_NAME_REGEX = re.compile(r"^use_(.*)$")
 REQUIRED = object()
@@ -41,10 +41,9 @@ def _build_settings_extractor(func: Callable) -> Callable:
 
         for key, default in config.items():
             if default is REQUIRED:
-                value = getattr(settings, key.upper())
+                value = settings[key]
             else:
-                value = getattr(settings, key.upper(), default)
-
+                value = settings.get(key, default)
             extracted[key] = value
 
         return extracted
@@ -57,33 +56,34 @@ class Plugin:
         self,
         func: Callable,
         name: Optional[str],
-        if_set: Optional[str],
+        activeif: Optional[Union[str, Callable]],
         permanent: bool,
     ):
         name = _get_plugin_name(func) if name is None else name
 
+        if isinstance(activeif, str):
+            setting_name = activeif
+
+            def activeif(settings: dict):  # pylint: disable=function-redefined
+                return setting_name in settings
+
         self.func = func
         self.name = name
-        self.if_set = if_set
+        self.activeif: Callable = activeif
         self.permanent = permanent
         self._revert = None
 
         self.extract_settings = _build_settings_extractor(func)
         self.configured_apps = {}
 
-    def should_install(self, settings: Any) -> bool:
-        if self.if_set is None:
-            return True
-
-        value = getattr(settings, self.if_set.upper(), UNDEFINED)
-        return value not in (UNDEFINED, False)
+        update_wrapper(self, func)
 
     def revert(self, func: Callable) -> Callable:
         self._revert = func
         return func
 
-    def __call__(self, app, settings) -> None:
-        if not self.should_install(settings):
+    def __call__(self, app, settings: dict) -> None:
+        if self.activeif is not None and not self.activeif(settings):
             return
 
         if app in self.configured_apps:
@@ -112,9 +112,10 @@ class Plugin:
 def plugin(
     func: Callable = None,
     name: str = None,
-    if_set: str = None,
+    activeif: Union[str, Callable] = None,
     permanent: bool = False,
 ):
+    kwargs = dict(name=name, activeif=activeif, permanent=permanent)
     if func is None:
-        return partial(plugin, name=name, if_set=if_set, permanent=permanent)
-    return Plugin(func, name=name, if_set=if_set, permanent=permanent)
+        return partial(plugin, **kwargs)
+    return Plugin(func, **kwargs)

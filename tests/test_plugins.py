@@ -62,12 +62,14 @@ def test_permanent_plugin_is_silently_not_reconfigured(app):
     assert configured == 1
 
 
-@pytest.mark.parametrize("if_set", ("MESSAGE", "message"))
-def test_if_set(app, if_set):
+@pytest.mark.parametrize(
+    "activeif", ("message", lambda settings: "message" in settings)
+)
+def test_conditional_install(app, activeif):
     configured = False
 
     @app.install
-    @plugin(if_set=if_set)
+    @plugin(activeif=activeif)
     def use_hello(app):
         nonlocal configured
         configured = True

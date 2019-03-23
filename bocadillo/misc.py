@@ -7,3 +7,9 @@ _ASSETS_DIR = join(dirname(abspath(__file__)), "assets")
 def read_asset(filename: str) -> str:
     with open(join(_ASSETS_DIR, filename), "r") as f:
         return f.read()
+
+
+def get_members(obj) -> dict:
+    return {
+        key: getattr(obj, key) for key in dir(obj) if not key.startswith("__")
+    }

@@ -6,15 +6,15 @@ from ..constants import DEFAULT_CORS_CONFIG
 from .base import plugin
 
 
-@plugin(if_set="CORS")
+@plugin(activeif="cors")
 def use_cors(app, cors: Union[bool, dict]):
     """Enable CORS (Cross-Origin Resource Sharing) headers.
 
     [constants.py]: /api/constants.md
     [CORSMiddleware]: https://www.starlette.io/middleware/#corsmiddleware
 
-    # Settings
-    CORS (bool or dict):
+    # Parameters
+    cors (bool or dict):
         If `True`, the default configuration defined in [constants.py] is used.
         Otherwise, the dictionary is passed to Starlette's [CORSMiddleware].
     """

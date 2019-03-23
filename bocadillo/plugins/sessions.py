@@ -6,14 +6,14 @@ from ..settings import SettingsError
 from .base import plugin
 
 
-@plugin(if_set="SESSIONS")
+@plugin(activeif="sessions")
 def use_sessions(app, sessions: Union[bool, dict]):
     """Enable cookie-based signed sessions.
 
     [SessionMiddleware]: https://www.starlette.io/middleware/#sessionmiddleware
 
     # Settings
-    SESSIONS (bool or dict):
+    sessions (bool or dict):
         if `True`, the secret key is obtained from the `SECRET_KEY` environment
         variable. Otherwise, it must be a dictionary which will be passed
         to Starlette's [SessionMiddleware].

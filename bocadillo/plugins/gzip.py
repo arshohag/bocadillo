@@ -3,17 +3,17 @@ from starlette.middleware.gzip import GZipMiddleware
 from .base import plugin
 
 
-@plugin(if_set="GZIP")
+@plugin(activeif="gzip")
 def use_gzip(app, gzip_min_size: int = 1024):
     """Enable [GZip] compression.
 
     [GZip]: /guides/http/middleware.md#gzip
 
-    # Settings
-    GZIP (bool):
+    # Parameters
+    gzip (bool):
         If `True`, automatically compress responses for clients that support it.
         Defaults to `False`.
-    GZIP_MIN_SIZE (int):
+    gzip_min_size (int):
         Compress only responses that have more bytes than the specified value.
         Defaults to `1024`.
     """

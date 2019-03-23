@@ -1,6 +1,6 @@
 import pytest
 
-from bocadillo import App, ASGIMiddleware, create_settings
+from bocadillo import App, ASGIMiddleware
 from bocadillo.testing import create_client
 
 

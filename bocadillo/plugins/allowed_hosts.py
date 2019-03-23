@@ -9,8 +9,8 @@ from .base import plugin
 def use_allowed_hosts(app, allowed_hosts: List[str] = None):
     """Restrict which hosts an application is allowed to be served at.
 
-    # Settings
-    ALLOWED_HOSTS (list of str, optional):
+    # Parameters
+    allowed_hosts (list of str, optional):
         a list of hosts. If the list contains `"*"`, any host is allowed.
         Defaults to `["*"]`.
     """

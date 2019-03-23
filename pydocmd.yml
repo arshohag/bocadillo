@@ -23,6 +23,15 @@ generate:
       - bocadillo.middleware:
           - bocadillo.middleware.Middleware+
           - bocadillo.middleware.ASGIMiddleware+
+  - plugins.md:
+      - bocadillo.plugins:
+          - bocadillo.plugins.allowed_hosts.use_allowed_hosts
+          - bocadillo.plugins.cors.use_cors
+          - bocadillo.plugins.gzip.use_gzip
+          - bocadillo.plugins.hsts.use_hsts
+          - bocadillo.plugins.sessions.use_sessions
+          - bocadillo.plugins.staticfiles.use_staticfiles
+          - bocadillo.plugins.base.plugin
   - recipes.md:
       - bocadillo.recipes:
           - bocadillo.recipes.RecipeBase+

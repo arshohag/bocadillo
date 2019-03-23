@@ -1,8 +1,9 @@
 import os
+from types import SimpleNamespace
 
 import pytest
 
-from bocadillo import App, create_settings
+from bocadillo import App
 from bocadillo.plugins import use_cors
 from bocadillo.utils import override_env
 
@@ -92,18 +93,17 @@ def test_declared_as(app: App):
     app.run(debug=True, declared_as="application", _run=run)
 
 
-def test_if_import_string_unknown_then_no_debug_warning_raised(app: App):
-    def run(app, **kwargs):
-        pass
-
+def test_if_import_string_unknown_then_no_debug_warning_raised(
+    app: App, empty_run
+):
     app.import_string = None
     with pytest.warns(UserWarning):
-        app.run(debug=True, _run=run)
+        app.run(debug=True, _run=empty_run)
 
 
 def test_pass_settings(app: App, empty_run):
     assert app not in use_cors.configured_apps
-    settings = create_settings(cors=True)
+    settings = SimpleNamespace(cors=True)
     app.run(settings, _run=empty_run)
     assert app in use_cors.configured_apps
 

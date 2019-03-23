@@ -5,7 +5,7 @@ from ..staticfiles import static
 from .base import plugin
 
 
-@plugin()
+@plugin
 def use_staticfiles(
     app,
     static_dir: Optional[str] = "static",
@@ -14,15 +14,15 @@ def use_staticfiles(
 ):
     """Enable static files serving with WhiteNoise.
 
-    # Settings
-    STATIC_DIR (str):
+    # Parameters
+    static_dir (str):
         the name of the directory containing static files, relative to
         the application entry point.
         Set to `None` to not serve any static files.
         Defaults to `"static"`.
-    STATIC_ROOT (str):
+    static_root (str):
         the path prefix for static assets. Defaults to `"static"`.
-    STATIC_CONFIG (dict):
+    static_config (dict):
         Extra static files configuration attributes.
         See also #::bocadillo.staticfiles#static.
     """
