@@ -1,9 +1,10 @@
 from starlette.middleware.gzip import GZipMiddleware
 
-from .base import Plugin
+from .base import plugin
 
 
-class GZipPlugin(Plugin):
+@plugin(if_set="GZIP")
+def use_gzip(app, gzip_min_size: int = 1024):
     """Enable [GZip] compression.
 
     [GZip]: /guides/http/middleware.md#gzip
@@ -16,8 +17,4 @@ class GZipPlugin(Plugin):
         Compress only responses that have more bytes than the specified value.
         Defaults to `1024`.
     """
-
-    apply_if_set = "GZIP"
-
-    def apply(self, app, gzip_min_size: int = 1024):
-        app.add_asgi_middleware(GZipMiddleware, minimum_size=gzip_min_size)
+    app.add_asgi_middleware(GZipMiddleware, minimum_size=gzip_min_size)

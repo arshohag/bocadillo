@@ -1,6 +1,6 @@
 import pytest
 
-from bocadillo import App, ASGIMiddleware
+from bocadillo import App, ASGIMiddleware, create_settings
 from bocadillo.testing import create_client
 
 
@@ -72,13 +72,10 @@ def test_pure_asgi_middleware(app: App, client):
     ],
 )
 def test_middleware_called_if_routed_to_sub_app(
-    route: str, origin: str, expected: str, expected_body: str
+    app, route: str, origin: str, expected: str, expected_body: str
 ):
-    app = App(
-        enable_cors=True,
-        cors_config={
-            "allow_origins": ["example.com", "localhost:8001", "ietf.org"]
-        },
+    app.configure(
+        cors={"allow_origins": ["example.com", "localhost:8001", "ietf.org"]}
     )
 
     @app.route("/")

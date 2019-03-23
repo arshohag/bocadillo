@@ -2,10 +2,11 @@ from typing import List
 
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from .base import Plugin
+from .base import plugin
 
 
-class AllowedHostsPlugin(Plugin):
+@plugin()
+def use_allowed_hosts(app, allowed_hosts: List[str] = None):
     """Restrict which hosts an application is allowed to be served at.
 
     # Settings
@@ -14,10 +15,7 @@ class AllowedHostsPlugin(Plugin):
         Defaults to `["*"]`.
     """
 
-    def apply(self, app, allowed_hosts: List[str] = None):
-        if allowed_hosts is None:
-            allowed_hosts = ["*"]
+    if allowed_hosts is None:
+        allowed_hosts = ["*"]
 
-        app.add_asgi_middleware(
-            TrustedHostMiddleware, allowed_hosts=allowed_hosts
-        )
+    app.add_asgi_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)

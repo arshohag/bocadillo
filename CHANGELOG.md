@@ -14,6 +14,31 @@ As a result, we strongly recommend you read this document carefully before upgra
 
 ## [Unreleased]
 
+### Added
+
+- Plugin mechanism:
+  - Definition: decorate a function with `@plugin()`.
+  - Settings are injected into the plugin function based on the declared parameters.
+  - Access and edit an app's list of plugins via `app.plugins`.
+- Settings infrastructure:
+  - `Settings` and `environ` helpers — see [Starlette configuration](https://www.starlette.io/config/).
+  - Configure an application (i.e. install its plugins) with `app.configure()`. It accepts a settings object or module and arbitrary keyword arguments. Automatically called by `app.run()`.
+
+### Changed
+
+- Initialization of features such as CORS, HSTS or allowed hosts in now performed via the `app.configure()` method. Per-feature configuration
+
+### Removed
+
+`App` parameters:
+
+- Removed `static_dir`, `static_root` and `static_config`. Use the `STATIC_DIR`, `STATIC_ROOT` and `STATIC_CONFIG` settings instead.
+- Removed `allowed_hosts`. Use the `ALLOWED_HOSTS` setting instead.
+- Removed `enable_sessions` and `sessions_config`. Use the `SESSIONS` setting instead.
+- Removed `enable_cors` and `cors_config`. Use the `CORS` setting instead.
+- Removed `enable_hsts`. Use the `HSTS` setting instead.
+- Removed `enable_gzip` and `gzip_min_size`. Use the `GZIP` and `GZIP_MIN_SIZE` settings instead.
+
 ## [v0.13.1] - 2019-03-19
 
 ### Changed

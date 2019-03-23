@@ -39,13 +39,13 @@ from .media import UnsupportedMediaType, get_default_handlers
 from .meta import DocsMeta
 from .middleware import ASGIMiddleware
 from .plugins import (
-    AllowedHostsPlugin,
-    CORSPlugin,
-    GZipPlugin,
-    HSTSPlugin,
     Plugin,
-    SessionsPlugin,
-    StaticFilesPlugin,
+    use_allowed_hosts,
+    use_cors,
+    use_gzip,
+    use_hsts,
+    use_sessions,
+    use_staticfiles,
 )
 from .request import Request
 from .response import Response
@@ -98,12 +98,12 @@ class App(RoutingMixin, metaclass=DocsMeta):
     import_string: Optional[str]
 
     plugins: List[Plugin] = [
-        AllowedHostsPlugin(),
-        CORSPlugin(),
-        GZipPlugin(),
-        HSTSPlugin(),
-        SessionsPlugin(),
-        StaticFilesPlugin(),
+        use_allowed_hosts,
+        use_cors,
+        use_gzip,
+        use_hsts,
+        use_sessions,
+        use_staticfiles,
     ]
 
     def __new__(cls, *args, **kwargs):
@@ -404,7 +404,18 @@ class App(RoutingMixin, metaclass=DocsMeta):
             return self._lifespan(scope)
         return self.asgi(scope)
 
-    def configure(self, settings: Any):
+    def configure(self, settings: Any = None, **kwargs):
+        """Install application plugins.
+
+        # Parameters
+        settings (any):
+            a settings object or module. If not given, one is created using the
+            given `kwargs`.
+        **kwargs (any): arbitrary settings, case-insensitive.
+        """
+        if settings is None:
+            settings = create_settings(**kwargs)
+
         for plugin in self.plugins:
             plugin(self, settings)
 

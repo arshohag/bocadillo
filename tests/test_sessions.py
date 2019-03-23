@@ -6,29 +6,29 @@ from bocadillo.testing import create_client
 from bocadillo.utils import override_env
 
 
-def test_sessions_enabled_no_secret_key():
+def test_sessions_enabled_no_secret_key(app):
     with pytest.raises(SettingsError):
-        App(sessions=True)
+        app.configure(sessions=True)
 
 
 @pytest.mark.parametrize("from_env", (True, False))
-def test_sessions_enabled_secret_key_empty(from_env):
+def test_sessions_enabled_secret_key_empty(app, from_env):
     if from_env:
         with override_env("SECRET_KEY", ""):
             with pytest.raises(SettingsError):
-                App(sessions=True)
+                app.configure(sessions=True)
     else:
         with pytest.raises(SettingsError):
-            App(sessions={"secret_key": ""})
+            app.configure(sessions={"secret_key": ""})
 
 
 @pytest.mark.parametrize("from_env", (True, False))
-def test_sessions_enabled_secret_key_present(from_env):
+def test_sessions_enabled_secret_key_present(app, from_env):
     if from_env:
         with override_env("SECRET_KEY", "not-so-secret"):
-            app = App(sessions=True)
+            app.configure(sessions=True)
     else:
-        app = App(sessions={"secret_key": "not-so-secret"})
+        app.configure(sessions={"secret_key": "not-so-secret"})
 
     @app.route("/set")
     @view(methods=["post"])

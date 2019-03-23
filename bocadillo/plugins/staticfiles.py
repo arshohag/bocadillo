@@ -2,10 +2,16 @@ from typing import Optional
 
 
 from ..staticfiles import static
-from .base import Plugin, Ref
+from .base import plugin
 
 
-class StaticFilesPlugin(Plugin):
+@plugin()
+def use_staticfiles(
+    app,
+    static_dir: Optional[str] = "static",
+    static_root: str = "static",
+    static_config: dict = None,
+):
     """Enable static files serving with WhiteNoise.
 
     # Settings
@@ -15,24 +21,15 @@ class StaticFilesPlugin(Plugin):
         Set to `None` to not serve any static files.
         Defaults to `"static"`.
     STATIC_ROOT (str):
-        the path prefix for static assets.
-        The value given to `static_dir` is used by default.
+        the path prefix for static assets. Defaults to `"static"`.
     STATIC_CONFIG (dict):
         Extra static files configuration attributes.
         See also #::bocadillo.staticfiles#static.
     """
+    if static_dir is None:
+        return
 
-    def apply(
-        self,
-        app,
-        static_dir: Optional[str] = "static",
-        static_root: str = Ref("static_dir"),
-        static_config: dict = None,
-    ):
-        if static_dir is None:
-            return
+    if static_config is None:
+        static_config = {}
 
-        if static_config is None:
-            static_config = {}
-
-        app.mount(static_root, static(static_dir, **static_config))
+    app.mount(static_root, static(static_dir, **static_config))
