@@ -68,6 +68,17 @@ def _get_module(script_path: str) -> Optional[str]:  # pragma: no cover
     return match.group(1).replace(os.path.sep, ".")
 
 
+def get_default_plugins():
+    return [
+        use_allowed_hosts,
+        use_cors,
+        use_gzip,
+        use_hsts,
+        use_sessions,
+        use_staticfiles,
+    ]
+
+
 class App(RoutingMixin, metaclass=DocsMeta):
     """The all-mighty application class.
 
@@ -97,15 +108,6 @@ class App(RoutingMixin, metaclass=DocsMeta):
 
     import_string: Optional[str]
 
-    plugins: List[Plugin] = [
-        use_allowed_hosts,
-        use_cors,
-        use_gzip,
-        use_hsts,
-        use_sessions,
-        use_staticfiles,
-    ]
-
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
 
@@ -124,6 +126,8 @@ class App(RoutingMixin, metaclass=DocsMeta):
         super().__init__()
 
         self.name = name
+
+        self.plugins = get_default_plugins()
 
         # Debug mode defaults to `False` but it can be set in `.run()`.
         self._debug = False
@@ -163,6 +167,10 @@ class App(RoutingMixin, metaclass=DocsMeta):
 
         self.on("startup", self._store.enter_session)
         self.on("shutdown", self._store.exit_session)
+
+    def install(self, plugin: Plugin) -> Plugin:
+        self.plugins.append(plugin)
+        return plugin
 
     def _app_providers(self):  # pylint: disable=method-hidden
         self._store.freeze()

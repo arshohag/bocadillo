@@ -2,6 +2,7 @@ from .applications import App
 from .errors import HTTPError
 from .middleware import ASGIMiddleware, Middleware
 from .injection import discover_providers, provider, useprovider
+from .plugins import plugin
 from .recipes import Recipe
 from .request import ClientDisconnect, Request
 from .response import Response

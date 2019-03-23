@@ -1,5 +1,6 @@
 import re
 import inspect
+from functools import partial
 from typing import Any, Callable, Dict, Optional
 
 PLUGIN_NAME_REGEX = re.compile(r"^use_(.*)$")
@@ -7,18 +8,18 @@ REQUIRED = object()
 UNDEFINED = object()
 
 
-def _get_name(func) -> str:
+def _get_plugin_name(func) -> str:
     match = PLUGIN_NAME_REGEX.match(func.__name__)
     if not match:
         raise ValueError(
             f"Cannot infer plugin name from {func}. "
-            "Use the 'use_{name}' naming convention "
+            "Hint: use the 'use_{name}' naming convention "
             "or pass the `name` parameter."
         )
     return match.group(1)
 
 
-def _get_settings_extractor(func: Callable) -> Callable:
+def _build_settings_extractor(func: Callable) -> Callable:
     config = {}
 
     sig = inspect.signature(func)
@@ -59,8 +60,7 @@ class Plugin:
         if_set: Optional[str],
         permanent: bool,
     ):
-        if name is None:
-            name = _get_name(func)
+        name = _get_plugin_name(func) if name is None else name
 
         self.func = func
         self.name = name
@@ -68,14 +68,14 @@ class Plugin:
         self.permanent = permanent
         self._revert = None
 
-        self.extract_settings = _get_settings_extractor(func)
+        self.extract_settings = _build_settings_extractor(func)
         self.configured_apps = {}
 
     def should_install(self, settings: Any) -> bool:
         if self.if_set is None:
             return True
 
-        value = getattr(settings, self.if_set, UNDEFINED)
+        value = getattr(settings, self.if_set.upper(), UNDEFINED)
         return value not in (UNDEFINED, False)
 
     def revert(self, func: Callable) -> Callable:
@@ -102,11 +102,19 @@ class Plugin:
         self.func(app, **settings)
         self.configured_apps[app] = settings
 
+    def __repr__(self):
+        return f"<Plugin: {self}>"
+
+    def __str__(self):
+        return self.name
+
 
 def plugin(
-    name: str = None, if_set: str = None, permanent: bool = False
-) -> Callable[[Callable], Plugin]:
-    def decorate(func: Callable) -> Plugin:
-        return Plugin(func, name=name, if_set=if_set, permanent=permanent)
-
-    return decorate
+    func: Callable = None,
+    name: str = None,
+    if_set: str = None,
+    permanent: bool = False,
+):
+    if func is None:
+        return partial(plugin, name=name, if_set=if_set, permanent=permanent)
+    return Plugin(func, name=name, if_set=if_set, permanent=permanent)
