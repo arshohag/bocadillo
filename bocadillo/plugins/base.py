@@ -1,6 +1,6 @@
 import re
 import inspect
-from typing import Any, Callable, Dict, NamedTuple, Optional
+from typing import Any, Callable, Dict, Optional
 
 PLUGIN_NAME_REGEX = re.compile(r"^use_(.*)$")
 REQUIRED = object()
@@ -52,11 +52,12 @@ def _get_settings_extractor(func: Callable) -> Callable:
 
 
 class Plugin:
-
-    __base__ = True
-
     def __init__(
-        self, func: Callable, name: Optional[str], if_set: Optional[str]
+        self,
+        func: Callable,
+        name: Optional[str],
+        if_set: Optional[str],
+        permanent: bool,
     ):
         if name is None:
             name = _get_name(func)
@@ -64,30 +65,48 @@ class Plugin:
         self.func = func
         self.name = name
         self.if_set = if_set
-        self.extract_settings = _get_settings_extractor(func)
-        self.configured_apps = set()
+        self.permanent = permanent
+        self._revert = None
 
-    def should_apply(self, settings: Any) -> bool:
+        self.extract_settings = _get_settings_extractor(func)
+        self.configured_apps = {}
+
+    def should_install(self, settings: Any) -> bool:
         if self.if_set is None:
             return True
 
         value = getattr(settings, self.if_set, UNDEFINED)
         return value not in (UNDEFINED, False)
 
+    def revert(self, func: Callable) -> Callable:
+        self._revert = func
+        return func
+
     def __call__(self, app, settings) -> None:
-        if app in self.configured_apps:
+        if not self.should_install(settings):
             return
 
-        if not self.should_apply(settings):
-            return
+        if app in self.configured_apps:
+            if self.permanent:
+                return
+            if self._revert is not None:
+                settings = self.configured_apps.pop(app)
+                self._revert(app, **settings)
+            else:
+                raise TypeError(
+                    f"{self.name} is already configured for app {app}, "
+                    "is not permanent and cannot be reconfigured."
+                )
 
         settings: dict = self.extract_settings(settings)
         self.func(app, **settings)
-        self.configured_apps.add(app)
+        self.configured_apps[app] = settings
 
 
-def plugin(name: str = None, if_set: str = None) -> Plugin:
-    def decorate(func):
-        return Plugin(func, name=name, if_set=if_set)
+def plugin(
+    name: str = None, if_set: str = None, permanent: bool = False
+) -> Callable[[Callable], Plugin]:
+    def decorate(func: Callable) -> Plugin:
+        return Plugin(func, name=name, if_set=if_set, permanent=permanent)
 
     return decorate

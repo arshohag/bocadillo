@@ -33,3 +33,8 @@ def use_staticfiles(
         static_config = {}
 
     app.mount(static_root, static(static_dir, **static_config))
+
+
+@use_staticfiles.revert
+def revert(app, static_root, **kwargs):
+    app.unmount(static_root)

@@ -258,6 +258,22 @@ class App(RoutingMixin, metaclass=DocsMeta):
         if isinstance(app, WhiteNoise):
             self._static_apps[prefix] = app
 
+    def unmount(self, prefix: str):
+        """Unmount the app mounted at the given prefix, if any."""
+        if not prefix.startswith("/"):
+            prefix = "/" + prefix
+
+        app = self._prefix_to_app.pop(prefix, None)
+
+        if app is None:
+            return
+
+        if isinstance(app, App) and app.name is not None:
+            del self._name_to_prefix_and_app[app.name]
+
+        if isinstance(app, WhiteNoise):
+            del self._static_apps[prefix]
+
     def recipe(self, recipe: "Recipe"):
         """Apply a recipe.
 
@@ -433,6 +449,9 @@ class App(RoutingMixin, metaclass=DocsMeta):
 
         # Parameters
 
+        settings (any):
+            an optional settings object or module.
+            If given, passed in a call to `.configure()`.
         host (str):
             The host to bind to.
             Defaults to `"127.0.0.1"` (localhost).
@@ -462,10 +481,8 @@ class App(RoutingMixin, metaclass=DocsMeta):
         if _run is None:  # pragma: no cover
             _run = run
 
-        if settings is None:
-            settings = create_settings()
-
-        self.configure(settings)
+        if settings is not None:
+            self.configure(settings)
 
         if "PORT" in os.environ:
             port = int(os.environ["PORT"])
