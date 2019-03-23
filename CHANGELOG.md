@@ -32,12 +32,16 @@ As a result, we strongly recommend you read this document carefully before upgra
 
 `App` parameters:
 
-- Removed `static_dir`, `static_root` and `static_config`. Use the `STATIC_DIR`, `STATIC_ROOT` and `STATIC_CONFIG` settings instead.
-- Removed `allowed_hosts`. Use the `ALLOWED_HOSTS` setting instead.
-- Removed `enable_sessions` and `sessions_config`. Use the `SESSIONS` setting instead.
-- Removed `enable_cors` and `cors_config`. Use the `CORS` setting instead.
-- Removed `enable_hsts`. Use the `HSTS` setting instead.
-- Removed `enable_gzip` and `gzip_min_size`. Use the `GZIP` and `GZIP_MIN_SIZE` settings instead.
+- **BREAKING** Removed `static_dir`, `static_root` and `static_config`. Use the `STATIC_DIR`, `STATIC_ROOT` and `STATIC_CONFIG` settings instead.
+- **BREAKING** Removed `allowed_hosts`. Use the `ALLOWED_HOSTS` setting instead.
+- **BREAKING** Removed `enable_sessions` and `sessions_config`. Use the `SESSIONS` setting instead.
+- **BREAKING** Removed `enable_cors` and `cors_config`. Use the `CORS` setting instead.
+- **BREAKING** Removed `enable_hsts`. Use the `HSTS` setting instead.
+- **BREAKING** Removed `enable_gzip` and `gzip_min_size`. Use the `GZIP` and `GZIP_MIN_SIZE` settings instead.
+
+Deprecated items from 0.13:
+
+- **BREAKING**: `.client` attribute on `App` and `Recipe` was removed. Please use `bocadillo.testing.create_client` instead.
 
 ## [v0.13.1] - 2019-03-19
 
