@@ -15,10 +15,6 @@ from typing import (
     Union,
 )
 
-from starlette.middleware.cors import CORSMiddleware
-from starlette.middleware.gzip import GZipMiddleware
-from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
-from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.wsgi import WSGIResponder
 from starlette.routing import Lifespan
 from uvicorn.main import run
@@ -34,7 +30,7 @@ from .app_types import (
     Send,
 )
 from .compat import WSGIApp, nullcontext
-from .constants import CONTENT_TYPE, DEFAULT_CORS_CONFIG
+from .constants import CONTENT_TYPE
 from .deprecation import deprecated
 from .error_handlers import error_to_text
 from .errors import HTTPError, HTTPErrorMiddleware, ServerErrorMiddleware
@@ -42,12 +38,20 @@ from .injection import _STORE
 from .media import UnsupportedMediaType, get_default_handlers
 from .meta import DocsMeta
 from .middleware import ASGIMiddleware
+from .plugins import (
+    AllowedHostsPlugin,
+    CORSPlugin,
+    GZipPlugin,
+    HSTSPlugin,
+    Plugin,
+    SessionsPlugin,
+    StaticFilesPlugin,
+)
 from .request import Request
 from .response import Response
 from .routing import RoutingMixin
-from .sessions import use_sessions
 from .settings import create_settings
-from .staticfiles import WhiteNoise, static
+from .staticfiles import WhiteNoise
 from .testing import create_client
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -69,8 +73,6 @@ class App(RoutingMixin, metaclass=DocsMeta):
 
     This class implements the [ASGI](https://asgi.readthedocs.io) protocol.
 
-    [CORSMiddleware]: https://www.starlette.io/middleware/#corsmiddleware
-
     # Example
 
     ```python
@@ -81,43 +83,6 @@ class App(RoutingMixin, metaclass=DocsMeta):
     # Parameters
     name (str):
         An optional name for the app.
-    static_dir (str):
-        The name of the directory containing static files, relative to
-        the application entry point. Set to `None` to not serve any static
-        files.
-        Defaults to `"static"`.
-    static_root (str):
-        The path prefix for static assets.
-        Defaults to `"static"`.
-    static_config (dict):
-        Extra static files configuration attributes.
-        See also #::bocadillo.staticfiles#static.
-    allowed_hosts (list of str, optional):
-        A list of hosts which the server is allowed to run at.
-        If the list contains `"*"`, any host is allowed.
-        Defaults to `["*"]`.
-    enable_cors (bool):
-        If `True`, Cross Origin Resource Sharing are configured according
-        to `cors_config`. Defaults to `False`.
-        See also [CORS](../guides/http/middleware.md#cors).
-    cors_config (dict):
-        A dictionary of CORS configuration parameters.
-        Defaults to `dict(allow_origins=[], allow_methods=["GET"])`.
-        See [CORSMiddleware].
-    enable_hsts (bool):
-        If `True`, enable HSTS (HTTP Strict Transport Security) and automatically
-        redirect HTTP traffic to HTTPS.
-        Defaults to `False`.
-        See also [HSTS](../guides/http/middleware.md#hsts).
-    enable_gzip (bool):
-        If `True`, enable GZip compression and automatically
-        compress responses for clients that support it.
-        Defaults to `False`.
-        See also [GZip](../guides/http/middleware.md#gzip).
-    gzip_min_size (int):
-        If specified, compress only responses that
-        have more bytes than the specified value.
-        Defaults to `1024`.
     media_type (str):
         Determines how values given to `res.media` are serialized.
         Can be one of the supported media types.
@@ -131,7 +96,15 @@ class App(RoutingMixin, metaclass=DocsMeta):
     """
 
     import_string: Optional[str]
-    plugins = [use_sessions]
+
+    plugins: List[Plugin] = [
+        AllowedHostsPlugin(),
+        CORSPlugin(),
+        GZipPlugin(),
+        HSTSPlugin(),
+        SessionsPlugin(),
+        StaticFilesPlugin(),
+    ]
 
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
@@ -146,24 +119,11 @@ class App(RoutingMixin, metaclass=DocsMeta):
         return instance
 
     def __init__(
-        self,
-        name: str = None,
-        *,
-        static_dir: Optional[str] = "static",
-        static_root: Optional[str] = "static",
-        static_config: dict = None,
-        allowed_hosts: List[str] = None,
-        enable_cors: bool = False,
-        cors_config: dict = None,
-        enable_hsts: bool = False,
-        enable_gzip: bool = False,
-        gzip_min_size: int = 1024,
-        media_type: str = CONTENT_TYPE.JSON,
+        self, name: str = None, *, media_type: str = CONTENT_TYPE.JSON
     ):
         super().__init__()
 
         self.name = name
-        self._configured = False
 
         # Debug mode defaults to `False` but it can be set in `.run()`.
         self._debug = False
@@ -171,16 +131,10 @@ class App(RoutingMixin, metaclass=DocsMeta):
         # Base ASGI app
         self.asgi = self.dispatch
 
-        # Mounted (children) apps
+        # Mounted (children) apps.
         self._prefix_to_app: Dict[str, Any] = {}
         self._name_to_prefix_and_app: Dict[str, Tuple[str, App]] = {}
         self._static_apps: Dict[str, WhiteNoise] = {}
-
-        # Static files
-        if static_dir is not None:
-            if static_root is None:
-                static_root = static_dir
-            self.mount(static_root, static(static_dir, **(static_config or {})))
 
         # Media
         self.media_handlers = get_default_handlers()
@@ -198,24 +152,6 @@ class App(RoutingMixin, metaclass=DocsMeta):
 
         # Lifespan middleware
         self._lifespan = Lifespan()
-
-        # ASGI middleware
-
-        if allowed_hosts is None:
-            allowed_hosts = ["*"]
-        self.add_asgi_middleware(
-            TrustedHostMiddleware, allowed_hosts=allowed_hosts
-        )
-
-        if enable_cors:
-            cors_config = {**DEFAULT_CORS_CONFIG, **(cors_config or {})}
-            self.add_asgi_middleware(CORSMiddleware, **cors_config)
-
-        if enable_hsts:
-            self.add_asgi_middleware(HTTPSRedirectMiddleware)
-
-        if enable_gzip:
-            self.add_asgi_middleware(GZipMiddleware, minimum_size=gzip_min_size)
 
         # Providers.
 
@@ -469,9 +405,6 @@ class App(RoutingMixin, metaclass=DocsMeta):
         return self.asgi(scope)
 
     def configure(self, settings: Any):
-        if self._configured:
-            raise RuntimeError("App is already configured.")
-
         for plugin in self.plugins:
             plugin(self, settings)
 
