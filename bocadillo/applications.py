@@ -45,7 +45,8 @@ from .middleware import ASGIMiddleware
 from .request import Request
 from .response import Response
 from .routing import RoutingMixin
-from .sessions import MissingSecretKey
+from .sessions import use_sessions
+from .settings import create_settings
 from .staticfiles import WhiteNoise, static
 from .testing import create_client
 
@@ -69,7 +70,6 @@ class App(RoutingMixin, metaclass=DocsMeta):
     This class implements the [ASGI](https://asgi.readthedocs.io) protocol.
 
     [CORSMiddleware]: https://www.starlette.io/middleware/#corsmiddleware
-    [SessionMiddleware]: https://www.starlette.io/middleware/#sessionmiddleware
 
     # Example
 
@@ -96,14 +96,6 @@ class App(RoutingMixin, metaclass=DocsMeta):
         A list of hosts which the server is allowed to run at.
         If the list contains `"*"`, any host is allowed.
         Defaults to `["*"]`.
-    enable_sessions (bool):
-        If `True`, cookie-based signed sessions are enabled according to the
-        `sessions_config`. The secret key must be non-empty and can also be
-        set via the `SECRET_KEY` environment variable.
-        Defaults to `False`.
-    sessions_config (dict):
-        A dictionary of sessions configuration parameters.
-        See [SessionMiddleware].
     enable_cors (bool):
         If `True`, Cross Origin Resource Sharing are configured according
         to `cors_config`. Defaults to `False`.
@@ -139,6 +131,7 @@ class App(RoutingMixin, metaclass=DocsMeta):
     """
 
     import_string: Optional[str]
+    plugins = [use_sessions]
 
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
@@ -160,19 +153,17 @@ class App(RoutingMixin, metaclass=DocsMeta):
         static_root: Optional[str] = "static",
         static_config: dict = None,
         allowed_hosts: List[str] = None,
-        enable_sessions: bool = False,
-        sessions_config: dict = None,
         enable_cors: bool = False,
         cors_config: dict = None,
         enable_hsts: bool = False,
         enable_gzip: bool = False,
         gzip_min_size: int = 1024,
         media_type: str = CONTENT_TYPE.JSON,
-        **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__()
 
         self.name = name
+        self._configured = False
 
         # Debug mode defaults to `False` but it can be set in `.run()`.
         self._debug = False
@@ -215,34 +206,6 @@ class App(RoutingMixin, metaclass=DocsMeta):
         self.add_asgi_middleware(
             TrustedHostMiddleware, allowed_hosts=allowed_hosts
         )
-
-        if enable_sessions:
-            sessions_config = sessions_config or {}
-
-            try:
-                from starlette.middleware.sessions import SessionMiddleware
-            except ImportError as exc:  # pragma: no cover
-                if "itsdangerous" in str(exc):
-                    raise ImportError(
-                        "Please install the [sessions] extra to use sessions: "
-                        "`pip install bocadillo[sessions]`."
-                    ) from exc
-                raise exc from None
-
-            secret_key = sessions_config.pop("secret_key", None)
-            if secret_key is None:
-                secret_key = os.environ.get("SECRET_KEY", "")
-
-            if not secret_key:
-                raise MissingSecretKey(
-                    "A non-empty secret key must be set to use sessions. "
-                    "Pass a 'secret_key' to 'session_config', or set the "
-                    "SECRET_KEY environment variable."
-                )
-
-            sessions_config["secret_key"] = secret_key
-
-            self.add_asgi_middleware(SessionMiddleware, **sessions_config)
 
         if enable_cors:
             cors_config = {**DEFAULT_CORS_CONFIG, **(cors_config or {})}
@@ -505,8 +468,16 @@ class App(RoutingMixin, metaclass=DocsMeta):
             return self._lifespan(scope)
         return self.asgi(scope)
 
+    def configure(self, settings: Any):
+        if self._configured:
+            raise RuntimeError("App is already configured.")
+
+        for plugin in self.plugins:
+            plugin(self, settings)
+
     def run(
         self,
+        settings: Any = None,
         host: str = None,
         port: int = None,
         debug: bool = None,
@@ -546,6 +517,11 @@ class App(RoutingMixin, metaclass=DocsMeta):
         """
         if _run is None:  # pragma: no cover
             _run = run
+
+        if settings is None:
+            settings = create_settings()
+
+        self.configure(settings)
 
         if "PORT" in os.environ:
             port = int(os.environ["PORT"])
