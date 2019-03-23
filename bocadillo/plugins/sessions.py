@@ -12,7 +12,7 @@ def use_sessions(app, sessions: Union[bool, dict]):
 
     [SessionMiddleware]: https://www.starlette.io/middleware/#sessionmiddleware
 
-    # Settings
+    # Parameters
     sessions (bool or dict):
         if `True`, the secret key is obtained from the `SECRET_KEY` environment
         variable. Otherwise, it must be a dictionary which will be passed
