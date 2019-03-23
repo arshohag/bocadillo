@@ -164,14 +164,10 @@ class App(RoutingMixin, metaclass=DocsMeta):
         self.on("startup", self._store.enter_session)
         self.on("shutdown", self._store.exit_session)
 
-        self._frozen = False
-
     def _app_providers(self):  # pylint: disable=method-hidden
-        if not self._frozen:
-            self._store.freeze()
-            self._frozen = True
-            # do nothing on subsequent calls
-            self._app_providers = nullcontext
+        self._store.freeze()
+        # Do nothing on subsequent calls.
+        self._app_providers = nullcontext
         return nullcontext()
 
     @property
