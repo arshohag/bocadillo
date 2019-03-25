@@ -423,7 +423,8 @@ class App(RoutingMixin, metaclass=DocsMeta):
         **kwargs (any): arbitrary settings, case-insensitive.
         """
         if settings is not None:
-            settings = get_members(settings)
+            if not isinstance(settings, dict):
+                settings = get_members(settings)
         else:
             settings = kwargs
 
@@ -432,7 +433,7 @@ class App(RoutingMixin, metaclass=DocsMeta):
 
     def run(
         self,
-        settings: Any = None,
+        *,
         host: str = None,
         port: int = None,
         debug: bool = None,
@@ -444,9 +445,6 @@ class App(RoutingMixin, metaclass=DocsMeta):
 
         # Parameters
 
-        settings (any):
-            an optional settings object or module.
-            If given, passed in a call to `.configure()`.
         host (str):
             The host to bind to.
             Defaults to `"127.0.0.1"` (localhost).
@@ -475,9 +473,6 @@ class App(RoutingMixin, metaclass=DocsMeta):
         """
         if _run is None:  # pragma: no cover
             _run = run
-
-        if settings is not None:
-            self.configure(settings)
 
         if "PORT" in os.environ:
             port = int(os.environ["PORT"])

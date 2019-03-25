@@ -1,3 +1,4 @@
+from typing import Any
 from os.path import join, dirname, abspath
 
 _ASSETS_DIR = join(dirname(abspath(__file__)), "assets")
@@ -9,7 +10,7 @@ def read_asset(filename: str) -> str:
         return f.read()
 
 
-def get_members(obj) -> dict:
+def get_members(obj: Any) -> dict:
     return {
         key: getattr(obj, key) for key in dir(obj) if not key.startswith("__")
     }
