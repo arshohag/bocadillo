@@ -428,6 +428,8 @@ class App(RoutingMixin, metaclass=DocsMeta):
         else:
             settings = kwargs
 
+        settings = {key.lower(): value for key, value in settings.items()}
+
         for plugin in self.plugins:
             plugin(self, settings)
 

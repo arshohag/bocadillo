@@ -102,7 +102,8 @@ def test_if_import_string_unknown_then_no_debug_warning_raised(
 
 
 @pytest.mark.parametrize(
-    "args, kwargs", [[(), {"cors": True}], [({"cors": True},), {}]]
+    "args, kwargs",
+    [[(), {"CORS": True}], [(), {"cors": True}], [({"cors": True},), {}]],
 )
 def test_configure_before_run(app: App, empty_run, args, kwargs):
     assert app not in use_cors.configured_apps
