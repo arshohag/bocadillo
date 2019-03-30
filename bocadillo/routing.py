@@ -16,6 +16,7 @@ from typing import (
     Dict,
     Generic,
     NoReturn,
+    List,
     Optional,
     Tuple,
     Type,
@@ -78,6 +79,8 @@ class BaseRoute(Generic[_V]):
 
     __slots__ = ("_pattern", "_parser", "view")
 
+    replaceable = ("pattern", "view")
+
     def __init__(self, pattern: str, view: _V):
         if pattern != WILDCARD and not pattern.startswith("/"):
             pattern = f"/{pattern}"
@@ -113,6 +116,16 @@ class BaseRoute(Generic[_V]):
         result = self._parser.parse(path)
         return result.named if result is not None else None
 
+    def get_replaced_kwargs(self, kwargs: dict) -> dict:
+        return {
+            name: kwargs.get(name, getattr(self, name))
+            for name in self.replaceable
+        }
+
+    def replace(self: _R, **kwargs) -> _R:
+        kwargs = self.get_replaced_kwargs(kwargs)
+        return type(self)(**kwargs)
+
     @classmethod
     def normalize(cls, view: Any) -> _V:
         """Perform any conversion necessary to return a proper view object.
@@ -131,6 +144,13 @@ class BaseRoute(Generic[_V]):
         """Normalize a view and build and a route instance."""
         view: _V = cls.normalize(view)
         return cls.build(view, pattern=pattern, **kwargs)
+
+    @classmethod
+    def decorator(cls, *args, **kwargs):
+        def decorate(view: Any):
+            return cls.create(view, *args, **kwargs)
+
+        return decorate
 
 
 class BaseRouter(Generic[_R, _V]):
@@ -211,6 +231,7 @@ class HTTPRoute(BaseRoute[View]):
     """
 
     __slots__ = ("name",)
+    replaceable = BaseRoute.replaceable + ("name",)
 
     def __init__(self, pattern: str, view: View, name: str):
         super().__init__(pattern, view)
@@ -282,6 +303,13 @@ class HTTPRoute(BaseRoute[View]):
 
         return super().build(view=view, pattern=pattern, name=name)
 
+    @classmethod
+    def decorator(cls, pattern: str, name: str = None, namespace: str = None):
+        # For editor support only.
+        return super().decorator(
+            pattern=pattern, name=name, namespace=namespace
+        )
+
     async def __call__(self, req: Request, res: Response, **params):
         method: str = req.method.lower()
 
@@ -345,10 +373,36 @@ class WebSocketRoute(BaseRoute[WebSocketView]):
         super().__init__(pattern, view)
         self._ws_kwargs = kwargs
 
+    def get_replaced_kwargs(self, kwargs):
+        replaced_kwargs = super().get_replaced_kwargs(kwargs)
+        replaced_kwargs.update(self._ws_kwargs)
+        return replaced_kwargs
+
     @classmethod
     def normalize(cls, view: WebSocketView) -> WebSocketView:
         # Resolve providers in the websocket view.
         return consumer(view)
+
+    @classmethod
+    def decorator(
+        cls,
+        pattern: str,
+        *,
+        auto_accept: bool = True,
+        value_type: str = None,
+        receive_type: str = None,
+        send_type: str = None,
+        caught_close_codes: Tuple[int] = None,
+    ):
+        # For editor support only.
+        return super().decorator(
+            pattern=pattern,
+            auto_accept=auto_accept,
+            value_type=value_type,
+            receive_type=receive_type,
+            send_type=send_type,
+            caught_close_codes=caught_close_codes,
+        )
 
     async def __call__(
         self, scope: Scope, receive: Receive, send: Send, **params
@@ -447,6 +501,36 @@ class RoutingMixin:
             send_type=send_type,
             caught_close_codes=caught_close_codes,
         )
+
+    def discover_routes(self, module: Any, prefix: str = ""):
+        """Mount routes declared in a Python module.
+
+        # Parameters
+        module (module):
+            an imported Python module which has routes declared
+            with `@bocadillo.route` or `@bocadillo.websocket_route`.
+        prefix (str):
+            an optional path prefix to prepend to the URL patterns of all the
+            discovered routes.
+        """
+        routes: List[BaseRoute] = [
+            getattr(module, name)
+            for name in dir(module)
+            if isinstance(getattr(module, name), BaseRoute)
+        ]
+
+        for route in routes:
+            if prefix:
+                pattern = prefix + route.pattern
+                if route.pattern == "/":
+                    pattern = pattern.rstrip("/")
+                route = route.replace(pattern=pattern)
+
+            if isinstance(route, HTTPRoute):
+                self.http_router.add_route(route)
+
+            elif isinstance(route, WebSocketRoute):
+                self.websocket_router.add_route(route)
 
     def url_for(self, name: str, **kwargs) -> str:
         """Build the full URL path for a named #::bocadillo.routing#HTTPRoute.
