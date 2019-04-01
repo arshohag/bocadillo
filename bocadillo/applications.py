@@ -270,22 +270,6 @@ class App(RoutingMixin, metaclass=DocsMeta):
         if isinstance(app, WhiteNoise):
             self._static_apps[prefix] = app
 
-    def unmount(self, prefix: str):
-        """Unmount the app mounted at the given prefix, if any."""
-        if not prefix.startswith("/"):
-            prefix = "/" + prefix
-
-        app = self._prefix_to_app.pop(prefix, None)
-
-        if app is None:
-            return
-
-        if isinstance(app, App) and app.name is not None:
-            del self._name_to_prefix_and_app[app.name]
-
-        if isinstance(app, WhiteNoise):
-            del self._static_apps[prefix]
-
     def recipe(self, recipe: "Recipe"):
         """Apply a recipe.
 
@@ -436,9 +420,7 @@ class App(RoutingMixin, metaclass=DocsMeta):
         """Configure the application settings and setup plugins.
 
         # Parameters
-        settings_obj (any):
-            a settings object or module. If not given, one is created using the
-            given `kwargs`.
+        settings_obj (any): an optional settings object or module.
         **kwargs (any): arbitrary settings, case-insensitive.
         """
         kwargs = {key.upper(): value for key, value in kwargs.items()}

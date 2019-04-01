@@ -14,8 +14,8 @@ from .staticfiles import static
 def use_allowed_hosts(app):
     """Restrict which hosts an application is allowed to be served at.
 
-    # Parameters
-    allowed_hosts (list of str, optional):
+    Settings:
+    - `ALLOWED_HOSTS` (list of str, optional):
         a list of hosts. If the list contains `"*"`, any host is allowed.
         Defaults to `["*"]`.
     """
@@ -32,9 +32,9 @@ def use_cors(app):
     [constants.py]: /api/constants.md
     [CORSMiddleware]: https://www.starlette.io/middleware/#corsmiddleware
 
-    # Parameters
-    cors (bool or dict):
-        If `True`, the default configuration defined in [constants.py] is used.
+    Settings:
+    - `CORS` (bool or dict):
+        if `True`, the default configuration defined in [constants.py] is used.
         Otherwise, the dictionary is passed to Starlette's [CORSMiddleware].
     """
     cors: Optional[Union[bool, dict]] = getattr(settings, "CORS", None)
@@ -53,12 +53,12 @@ def use_gzip(app):
 
     [GZip]: /guides/http/middleware.md#gzip
 
-    # Parameters
-    gzip (bool):
-        If `True`, automatically compress responses for clients that support it.
+    Settings:
+    - `GZIP` (bool):
+        if `True`, automatically compress responses for clients that support it.
         Defaults to `False`.
-    gzip_min_size (int):
-        Compress only responses that have more bytes than the specified value.
+    - `GZIP_MIN_SIZE` (int):
+        compress only responses that have more bytes than the specified value.
         Defaults to `1024`.
     """
     if not getattr(settings, "GZIP", False):
@@ -73,9 +73,9 @@ def use_hsts(app):
 
     [HSTS]: /guides/http/middleware.md#hsts
 
-    # Parameters
-    hsts (bool):
-        If `True`, HTTP traffic is automatically redirected to HTTPS.
+    Settings:
+    - `HSTS` (bool):
+        if `True`, HTTP traffic is automatically redirected to HTTPS.
         Defaults to `False`.
     """
     if not getattr(settings, "HSTS", None):
@@ -89,8 +89,8 @@ def use_sessions(app):
 
     [SessionMiddleware]: https://www.starlette.io/middleware/#sessionmiddleware
 
-    # Parameters
-    sessions (bool or dict):
+    Settings:
+    - `SESSIONS` (bool or dict):
         if `True`, the secret key is obtained from the `SECRET_KEY` environment
         variable. Otherwise, it must be a dictionary which will be passed
         to Starlette's [SessionMiddleware].
@@ -124,16 +124,16 @@ def use_sessions(app):
 def use_staticfiles(app):
     """Enable static files serving with WhiteNoise.
 
-    # Parameters
-    static_dir (str):
+    Settings:
+    - `STATIC_DIR` (str):
         the name of the directory containing static files, relative to
         the application entry point.
         Set to `None` to not serve any static files.
         Defaults to `"static"`.
-    static_root (str):
+    - `STATIC_ROOT` (str):
         the path prefix for static assets. Defaults to `"static"`.
-    static_config (dict):
-        Extra static files configuration attributes.
+    - `STATIC_CONFIG` (dict):
+        extra static files configuration attributes.
         See also #::bocadillo.staticfiles#static.
     """
     static_root = getattr(settings, "STATIC_ROOT", "static")
