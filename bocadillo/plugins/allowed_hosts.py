@@ -2,11 +2,10 @@ from typing import List
 
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from .base import plugin
+from ..config import settings
 
 
-@plugin(permanent=True)
-def use_allowed_hosts(app, allowed_hosts: List[str] = None):
+def use_allowed_hosts(app):
     """Restrict which hosts an application is allowed to be served at.
 
     # Parameters
@@ -14,6 +13,7 @@ def use_allowed_hosts(app, allowed_hosts: List[str] = None):
         a list of hosts. If the list contains `"*"`, any host is allowed.
         Defaults to `["*"]`.
     """
+    allowed_hosts = getattr(settings, "ALLOWED_HOSTS", None)
     if allowed_hosts is None:
         allowed_hosts = ["*"]
 

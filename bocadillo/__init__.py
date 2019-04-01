@@ -1,4 +1,5 @@
 from .applications import App
+from .config import Config, environ, settings, SettingsError
 from .errors import HTTPError
 from .middleware import ASGIMiddleware, Middleware
 from .injection import discover_providers, provider, useprovider
@@ -6,7 +7,6 @@ from .plugins import plugin
 from .recipes import Recipe
 from .request import ClientDisconnect, Request
 from .response import Response
-from .settings import environ, Settings
 from .sse import server_event
 from .staticfiles import static
 from .templates import Templates

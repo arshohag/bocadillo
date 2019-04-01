@@ -1,9 +1,8 @@
 from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 
-from .base import plugin
+from ..config import settings
 
 
-@plugin(activeif="hsts")
 def use_hsts(app):
     """Enable [HSTS].
 
@@ -14,4 +13,7 @@ def use_hsts(app):
         If `True`, HTTP traffic is automatically redirected to HTTPS.
         Defaults to `False`.
     """
+    if not getattr(settings, "HSTS", None):
+        return
+
     app.add_asgi_middleware(HTTPSRedirectMiddleware)

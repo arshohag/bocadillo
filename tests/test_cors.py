@@ -1,9 +1,8 @@
-from bocadillo import App
 from bocadillo.testing import create_client
 
 
-def test_no_allowed_origins_by_default(app):
-    app.configure(cors=True)
+def test_no_allowed_origins_by_default(raw_app):
+    app = raw_app.configure(cors=True)
 
     @app.route("/")
     async def index(req, res):
@@ -20,8 +19,8 @@ def test_no_allowed_origins_by_default(app):
     assert response.status_code == 400
 
 
-def test_if_origin_not_in_allow_origins_then_400(app):
-    app.configure(cors={"allow_origins": ["foobar.com"]})
+def test_if_origin_not_in_allow_origins_then_400(raw_app):
+    app = raw_app.configure(cors={"allow_origins": ["foobar.com"]})
 
     @app.route("/")
     async def index(req, res):
@@ -47,8 +46,8 @@ def test_if_origin_not_in_allow_origins_then_400(app):
     assert response.status_code == 400
 
 
-def test_if_method_not_in_allow_methods_then_400(app):
-    app.configure(
+def test_if_method_not_in_allow_methods_then_400(raw_app):
+    app = raw_app.configure(
         cors={"allow_origins": ["foobar.com"], "allow_methods": ["POST"]}
     )
 

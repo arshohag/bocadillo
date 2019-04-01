@@ -1,17 +1,8 @@
-from typing import Optional
-
-
+from ..config import settings
 from ..staticfiles import static
-from .base import plugin
 
 
-@plugin
-def use_staticfiles(
-    app,
-    static_dir: Optional[str] = "static",
-    static_root: str = "static",
-    static_config: dict = None,
-):
+def use_staticfiles(app):
     """Enable static files serving with WhiteNoise.
 
     # Parameters
@@ -26,15 +17,16 @@ def use_staticfiles(
         Extra static files configuration attributes.
         See also #::bocadillo.staticfiles#static.
     """
+    static_root = getattr(settings, "STATIC_ROOT", "static")
+    static_dir = getattr(settings, "STATIC_DIR", "static")
+    static_config = getattr(settings, "STATIC_CONFIG", {})
+
     if static_dir is None:
         return
-
-    if static_config is None:
-        static_config = {}
 
     app.mount(static_root, static(static_dir, **static_config))
 
 
-@use_staticfiles.revert
-def revert(app, static_root, **kwargs):
-    app.unmount(static_root)
+# @use_staticfiles.revert
+# def revert(app, static_root, **kwargs):
+#     app.unmount(static_root)

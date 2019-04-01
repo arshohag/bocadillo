@@ -1,13 +1,9 @@
 import os
-from typing import Union
 
-from ..settings import SettingsError
-
-from .base import plugin
+from ..config import settings, SettingsError
 
 
-@plugin(activeif="sessions")
-def use_sessions(app, sessions: Union[bool, dict]):
+def use_sessions(app):
     """Enable cookie-based signed sessions.
 
     [SessionMiddleware]: https://www.starlette.io/middleware/#sessionmiddleware
@@ -28,12 +24,17 @@ def use_sessions(app, sessions: Union[bool, dict]):
             ) from exc
         raise exc from None
 
+    sessions = getattr(settings, "SESSIONS", None)
+
+    if sessions is None:
+        return
+
     if sessions is True:
         sessions = {"secret_key": os.getenv("SECRET_KEY")}
 
     if not sessions.get("secret_key"):
         raise SettingsError(
-            "A non-empty `secret_key` must be set to use sessions."
+            "`SESSIONS` must have a non-empty `secret_key` to use sessions."
         )
 
     app.add_asgi_middleware(SessionMiddleware, **sessions)

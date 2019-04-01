@@ -72,9 +72,9 @@ def test_pure_asgi_middleware(app: App, client):
     ],
 )
 def test_middleware_called_if_routed_to_sub_app(
-    app, route: str, origin: str, expected: str, expected_body: str
+    raw_app, route: str, origin: str, expected: str, expected_body: str
 ):
-    app.configure(
+    app = raw_app.configure(
         cors={"allow_origins": ["example.com", "localhost:8001", "ietf.org"]}
     )
 

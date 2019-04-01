@@ -101,17 +101,6 @@ def test_if_import_string_unknown_then_no_debug_warning_raised(
         app.run(debug=True, _run=empty_run)
 
 
-@pytest.mark.parametrize(
-    "args, kwargs",
-    [[(), {"CORS": True}], [(), {"cors": True}], [({"cors": True},), {}]],
-)
-def test_configure_before_run(app: App, empty_run, args, kwargs):
-    assert app not in use_cors.configured_apps
-    app.configure(*args, **kwargs)
-    assert app in use_cors.configured_apps
-    app.run(_run=empty_run)
-
-
 @pytest.mark.xfail(reason="`.run()` does not accept settings")
 def test_cannot_pass_settings_to_run(app: App, empty_run):
     app.run(object(), _run=empty_run)

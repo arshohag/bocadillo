@@ -8,7 +8,6 @@ from typing import (
     Any,
     Callable,
     Dict,
-    List,
     Optional,
     Tuple,
     Type,
@@ -30,13 +29,13 @@ from .app_types import (
     Send,
 )
 from .compat import WSGIApp, nullcontext
+from .config import settings
 from .constants import CONTENT_TYPE
 from .error_handlers import error_to_text
 from .errors import HTTPError, HTTPErrorMiddleware, ServerErrorMiddleware
 from .injection import _STORE
 from .media import UnsupportedMediaType, get_default_handlers
 from .meta import DocsMeta
-from .misc import get_members
 from .middleware import ASGIMiddleware
 from .plugins import (
     Plugin,
@@ -432,25 +431,23 @@ class App(RoutingMixin, metaclass=DocsMeta):
             return self._lifespan(scope)
         return self.asgi(scope)
 
-    def configure(self, settings: Any = None, **kwargs):
-        """Install application plugins.
+    def configure(self, settings_obj: Any = None, **kwargs):
+        """Configure the application settings and setup plugins.
 
         # Parameters
-        settings (any):
+        settings_obj (any):
             a settings object or module. If not given, one is created using the
             given `kwargs`.
         **kwargs (any): arbitrary settings, case-insensitive.
         """
-        if settings is not None:
-            if not isinstance(settings, dict):
-                settings = get_members(settings)
-        else:
-            settings = kwargs
+        kwargs = {key.upper(): value for key, value in kwargs.items()}
 
-        settings = {key.lower(): value for key, value in settings.items()}
+        settings.configure(settings_obj, **kwargs)
 
         for plugin in self.plugins:
-            plugin(self, settings)
+            plugin(self)
+
+        return self  # for convenience
 
     def run(
         self,
