@@ -27,6 +27,7 @@ from .app_types import (
     Receive,
     Scope,
     Send,
+    Plugin,
 )
 from .compat import WSGIApp, nullcontext
 from .config import settings
@@ -38,7 +39,6 @@ from .media import UnsupportedMediaType, get_default_handlers
 from .meta import DocsMeta
 from .middleware import ASGIMiddleware
 from .plugins import (
-    Plugin,
     use_allowed_hosts,
     use_cors,
     use_gzip,
@@ -65,15 +65,16 @@ def _get_module(script_path: str) -> Optional[str]:  # pragma: no cover
     return match.group(1).replace(os.path.sep, ".")
 
 
-def get_default_plugins():
-    return [
+def get_default_plugins() -> Dict[str, Plugin]:
+    plugins = (
         use_allowed_hosts,
         use_cors,
         use_gzip,
         use_hsts,
         use_sessions,
         use_staticfiles,
-    ]
+    )
+    return {plugin.__name__: plugin for plugin in plugins}
 
 
 class App(RoutingMixin, metaclass=DocsMeta):
@@ -142,7 +143,7 @@ class App(RoutingMixin, metaclass=DocsMeta):
 
         self.name = name
 
-        self.plugins = get_default_plugins()
+        self.plugins: Dict[str, Plugin] = get_default_plugins()
 
         # Debug mode defaults to `False` but it can be set in `.run()`.
         self._debug = False
@@ -184,8 +185,8 @@ class App(RoutingMixin, metaclass=DocsMeta):
         self.on("startup", self._store.enter_session)
         self.on("shutdown", self._store.exit_session)
 
-    def install(self, plugin: Plugin) -> Plugin:
-        self.plugins.append(plugin)
+    def plugin(self, plugin: Plugin) -> Plugin:
+        self.plugins[plugin.__name__] = plugin
         return plugin
 
     def _app_providers(self):
@@ -444,7 +445,7 @@ class App(RoutingMixin, metaclass=DocsMeta):
 
         settings.configure(settings_obj, **kwargs)
 
-        for plugin in self.plugins:
+        for plugin in self.plugins.values():
             plugin(self)
 
         return self  # for convenience

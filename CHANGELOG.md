@@ -16,17 +16,19 @@ As a result, we strongly recommend you read this document carefully before upgra
 
 ### Added
 
-- Plugin mechanism:
-  - Definition: decorate a function with `@plugin()`.
-  - Settings are injected into the plugin function based on the declared parameters.
-  - Access and edit an app's list of plugins via `app.plugins`.
 - Settings infrastructure:
-  - `Settings` and `environ` helpers — see [Starlette configuration](https://www.starlette.io/config/).
-  - Configure an application (i.e. install its plugins) with `app.configure()`. It accepts a settings object or module and arbitrary keyword arguments. Automatically called by `app.run()`.
+  - `Config` and `environ` helpers — see [Starlette configuration](https://www.starlette.io/config/).
+  - Django-style `bocadillo.settings` lazy object which can be used to access settings lazily from anywhere in an application code base.
+  - The main application must be configured with `app.configure()` before being run. This method accepts an optional settings object/module (with settings in upper case), and arbitrary keyword arguments (case-insensitive). Settings that start with an underscore (e.g. `_SOME_VAR`) are ignored.
+- Plugin mechanism:
+  - A plugin is just a function with the signature: `(app: App) -> None`.
+  - In a plugin, use the new lazy `settings` object to perform configuration.
+  - Register a new plugin using `@app.plugin`.
+  - Inspect and edit plugins using the `app.plugins` dictionary.
 
 ### Changed
 
-- Initialization of features such as CORS, HSTS or allowed hosts in now performed via the `app.configure()` method. Per-feature configuration
+- Features such as CORS, HSTS or allowed hosts are now implemented via plugins, and configured via `app.configure()`. See the "Removed" section for the impact on the application API.
 
 ### Fixed
 

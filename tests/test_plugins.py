@@ -5,7 +5,7 @@ from bocadillo.testing import create_client
 
 
 def test_basic(raw_app):
-    @raw_app.install
+    @raw_app.plugin
     def use_foo(app):
         @app.route("/foo")
         async def foo(req, res):
@@ -20,7 +20,7 @@ def test_basic(raw_app):
 
 
 def test_use_settings(raw_app):
-    @raw_app.install
+    @raw_app.plugin
     def use_hello(app):
         hello_message = getattr(settings, "HELLO_MESSAGE")
 

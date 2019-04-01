@@ -51,8 +51,12 @@ class LazySettings:
         wrapped = Settings(obj)
 
         for name, option in options.items():
+            if name.startswith("_"):
+                continue
+
             if not name.isupper():
                 raise SettingsError(f"Setting {name} must be uppercase.")
+
             setattr(wrapped, name, option)
 
         self._wrapped = wrapped
