@@ -28,6 +28,10 @@ As a result, we strongly recommend you read this document carefully before upgra
 
 - Initialization of features such as CORS, HSTS or allowed hosts in now performed via the `app.configure()` method. Per-feature configuration
 
+### Fixed
+
+- The code base now uses `__slots__` in all relevant places. We expect some speed improvements as a result.
+
 ### Removed
 
 `App` parameters:
