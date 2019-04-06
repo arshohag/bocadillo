@@ -1,6 +1,6 @@
 import pytest
 
-from bocadillo import App, view, ExpectedAsync
+from bocadillo import App, ExpectedAsync, view
 from bocadillo.constants import ALL_HTTP_METHODS
 
 
