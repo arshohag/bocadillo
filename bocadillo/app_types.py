@@ -23,9 +23,7 @@ class ASGIApp:
 
 
 # HTTP
-AsyncHandler = Callable[[Request, Response, Any], Awaitable[None]]
-SyncHandler = Callable[[Request, Response, Any], None]
-Handler = Union[AsyncHandler, SyncHandler]
+Handler = Callable[[Request, Response, Any], Awaitable[None]]
 ErrorHandler = Callable[[Request, Response, _E], Awaitable[None]]
 
 

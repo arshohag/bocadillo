@@ -1,10 +1,9 @@
-import inspect
-from functools import partial, wraps
-from typing import Any, cast, Dict, List, Optional, Type, Union
+from functools import partial
+from typing import Any, Dict, List, Type, Union
 
 from . import injection
-from .app_types import AsyncHandler, Handler
-from .compat import call_async, camel_to_snake
+from .app_types import Handler
+from .compat import camel_to_snake
 from .constants import ALL_HTTP_METHODS
 from .converters import ViewConverter, convert_arguments
 
@@ -66,48 +65,33 @@ class View:
     def __init__(self, name: str):
         self.name = name
 
-    get: AsyncHandler
-    post: AsyncHandler
-    put: AsyncHandler
-    patch: AsyncHandler
-    delete: AsyncHandler
-    head: AsyncHandler
-    options: AsyncHandler
-    handle: AsyncHandler
-
-    @staticmethod
-    def _to_all_async(handlers: Dict[str, Handler]) -> Dict[str, AsyncHandler]:
-        async_handlers: Dict[str, AsyncHandler] = {}
-
-        for method, handler in handlers.items():
-            if not inspect.iscoroutinefunction(handler):
-                handler = wraps(handler)(partial(call_async, handler))
-            async_handlers[method] = cast(AsyncHandler, handler)
-
-        return async_handlers
+    get: Handler
+    post: Handler
+    put: Handler
+    patch: Handler
+    delete: Handler
+    head: Handler
+    options: Handler
+    handle: Handler
 
     @classmethod
     def create(
         cls: Type["View"], name: str, handlers: Dict[str, Handler]
     ) -> "View":
-        async_handlers: Dict[str, AsyncHandler] = cls._to_all_async(handlers)
-
-        copy_get_to_head = (
-            "get" in async_handlers and "head" not in async_handlers
-        )
+        copy_get_to_head = "get" in handlers and "head" not in handlers
         if copy_get_to_head:
-            async_handlers["head"] = async_handlers["get"]
+            handlers["head"] = handlers["get"]
 
         vue: View = cls(name)
 
-        for method, handler in async_handlers.items():
+        for method, handler in handlers.items():
             handler = convert_arguments(handler, converter_class=HTTPConverter)
             handler = injection.consumer(handler)
             setattr(vue, method, handler)
 
         return vue
 
-    def get_handler(self, method: str) -> AsyncHandler:
+    def get_handler(self, method: str) -> Handler:
         try:
             return getattr(self, "handle")
         except AttributeError:
