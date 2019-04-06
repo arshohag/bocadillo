@@ -21,6 +21,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.wsgi import WSGIMiddleware
 from starlette.routing import Lifespan
 from uvicorn.main import run
+import typesystem
 
 from .app_types import (
     _E,
@@ -33,7 +34,7 @@ from .app_types import (
 )
 from .compat import WSGIApp, nullcontext
 from .constants import CONTENT_TYPE, DEFAULT_CORS_CONFIG
-from .deprecation import deprecated
+from .converters import on_validation_error
 from .error_handlers import error_to_text
 from .errors import HTTPError, HTTPErrorMiddleware, ServerErrorMiddleware
 from .injection import _STORE
@@ -45,7 +46,6 @@ from .response import Response
 from .routing import RoutingMixin
 from .sessions import MissingSecretKey
 from .staticfiles import WhiteNoise, static
-from .testing import create_client
 
 if TYPE_CHECKING:  # pragma: no cover
     from .recipes import Recipe
@@ -136,6 +136,23 @@ class App(RoutingMixin, metaclass=DocsMeta):
         You can access, edit or replace this at will.
     """
 
+    __slots__ = (
+        "name",
+        "import_string",
+        "_debug",
+        "asgi",
+        "_prefix_to_app",
+        "_name_to_prefix_and_app",
+        "_static_apps",
+        "media_handlers",
+        "_media_type",
+        "exception_middleware",
+        "server_error_middleware",
+        "_lifespan",
+        "_store",
+        "_frozen",
+    )
+
     import_string: Optional[str]
 
     def __new__(cls, *args, **kwargs):
@@ -202,6 +219,7 @@ class App(RoutingMixin, metaclass=DocsMeta):
             self.exception_middleware, handler=error_to_text, debug=self._debug
         )
         self.add_error_handler(HTTPError, error_to_text)
+        self.add_error_handler(typesystem.ValidationError, on_validation_error)
 
         # Lifespan middleware
         self._lifespan = Lifespan()
@@ -269,18 +287,7 @@ class App(RoutingMixin, metaclass=DocsMeta):
         if not self._frozen:
             self._store.freeze()
             self._frozen = True
-            # do nothing on subsequent calls
-            self._app_providers = nullcontext
         return nullcontext()
-
-    @property
-    @deprecated(
-        since="0.13",
-        removal="0.14",
-        alternative=("create_client", "/api/testing.md#create-client"),
-    )
-    def client(self):
-        return create_client(self)
 
     @property
     def debug(self) -> bool:

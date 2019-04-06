@@ -55,17 +55,6 @@ def test_websocket_route_parameters(app: App, client):
         assert ws.receive_text() == "foo"
 
 
-def test_if_route_parameter_fails_validation_then_403(app: App, client):
-    @app.websocket_route("/chat/{id:d}")
-    async def chat_room(ws: WebSocket, id: int):
-        pass
-
-    with pytest.raises(WebSocketDisconnect) as ctx:
-        with client.websocket_connect("/chat/foo"):
-            pass
-    assert ctx.value.code == 403
-
-
 def test_non_existing_endpoint_returns_403_as_per_the_asgi_spec(client):
     with pytest.raises(WebSocketDisconnect) as ctx:
         with client.websocket_connect("/foo"):
@@ -129,23 +118,23 @@ def test_websocket_url(app: App, client):
         pass
 
 
-def test_websocket_headers(app: App):
+def test_websocket_headers(app: App, client):
     @app.websocket_route("/test")
     async def test(ws: WebSocket):
         await ws.send_json(dict(ws.headers))
 
-    with app.client.websocket_connect("/test", headers={"X-Foo": "bar"}) as ws:
+    with client.websocket_connect("/test", headers={"X-Foo": "bar"}) as ws:
         headers = ws.receive_json()
 
     assert headers["x-foo"] == "bar"
 
 
-def test_websocket_query_params(app: App):
+def test_websocket_query_params(app: App, client):
     @app.websocket_route("/test")
     async def test(ws: WebSocket):
         await ws.send_json(dict(ws.query_params))
 
-    with app.client.websocket_connect("/test?q=hello") as ws:
+    with client.websocket_connect("/test?q=hello") as ws:
         query_params = ws.receive_json()
 
     assert query_params["q"] == "hello"

@@ -6,6 +6,7 @@ from . import injection
 from .app_types import AsyncHandler, Handler
 from .compat import call_async, camel_to_snake
 from .constants import ALL_HTTP_METHODS
+from .converters import ViewConverter, convert_arguments
 
 MethodsParam = Union[List[str], all]  # type: ignore
 
@@ -13,6 +14,12 @@ MethodsParam = Union[List[str], all]  # type: ignore
 class HandlerDoesNotExist(Exception):
     # Raised to signal that no handler exists for a requested HTTP method.
     pass
+
+
+class HTTPConverter(ViewConverter):
+    def get_query_params(self, args, kwargs):
+        req = args[0]
+        return req.query_params
 
 
 class View:
@@ -44,10 +51,20 @@ class View:
     name (str): the name of the view.
     """
 
-    def __init__(self, name: str, doc: str = None):
+    __slots__ = (
+        "name",
+        "get",
+        "post",
+        "put",
+        "patch",
+        "delete",
+        "head",
+        "options",
+        "handle",
+    )
+
+    def __init__(self, name: str):
         self.name = name
-        if doc is not None:
-            self.__doc__ = doc
 
     get: AsyncHandler
     post: AsyncHandler
@@ -71,10 +88,7 @@ class View:
 
     @classmethod
     def create(
-        cls: Type["View"],
-        name: str,
-        docstring: Optional[str],
-        handlers: Dict[str, Handler],
+        cls: Type["View"], name: str, handlers: Dict[str, Handler]
     ) -> "View":
         async_handlers: Dict[str, AsyncHandler] = cls._to_all_async(handlers)
 
@@ -84,9 +98,10 @@ class View:
         if copy_get_to_head:
             async_handlers["head"] = async_handlers["get"]
 
-        vue: View = cls(name, doc=docstring)
+        vue: View = cls(name)
 
         for method, handler in async_handlers.items():
+            handler = convert_arguments(handler, converter_class=HTTPConverter)
             handler = injection.consumer(handler)
             setattr(vue, method, handler)
 
@@ -107,7 +122,7 @@ def from_handler(handler: Handler, methods: MethodsParam = None) -> View:
 
     # Parameters
     handler (function or coroutine function):
-        Its name and docstring are copied onto the view.
+        Its name is copied onto the view.
         It used as a handler for each of the declared `methods`.
         For example, if `methods=["post"]` then the returned `view` object
         will only have a `.post()` handler.
@@ -128,7 +143,7 @@ def from_handler(handler: Handler, methods: MethodsParam = None) -> View:
     else:
         methods = [m.lower() for m in methods]
     handlers = {method: handler for method in methods}
-    return View.create(handler.__name__, handler.__doc__, handlers)
+    return View.create(handler.__name__, handlers)
 
 
 def from_obj(obj: Any) -> View:
@@ -136,15 +151,14 @@ def from_obj(obj: Any) -> View:
 
     # Parameters
     obj (any):
-        its handlers, snake-cased class name and docstring are copied
-        onto the view.
+        its handlers and snake-cased class name are copied onto the view.
 
     # Returns
     view: a #::bocadillo.views#View instance.
     """
     handlers = get_handlers(obj)
     name = camel_to_snake(obj.__class__.__name__)
-    return View.create(name, obj.__doc__, handlers)
+    return View.create(name, handlers)
 
 
 def get_handlers(obj: Any) -> Dict[str, Handler]:

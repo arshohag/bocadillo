@@ -12,9 +12,10 @@ pytest-cov = "*"
 pytest-asyncio = "*"
 bumpversion = "*"
 pre-commit = "*"
-pydoc-markdown = {git = "https://github.com/NiklasRosenstein/pydoc-markdown.git"}
+pydoc-markdown = "<2.0.5"
 pylint = "*"
 mypy = "*"
+rope = "*"
 
 [requires]
 python_version = "3.7"
