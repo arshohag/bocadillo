@@ -1,3 +1,4 @@
+import inspect
 import re
 from typing import Callable, List, TypeVar, Any
 
@@ -16,6 +17,16 @@ _CAMEL_REGEX = re.compile(r"(.)([A-Z][a-z]+)")
 _SNAKE_REGEX = re.compile(r"([a-z0-9])([A-Z])")
 
 _V = TypeVar("_V")
+
+
+class ExpectedAsync(Exception):
+    """Raised when a feature expected an asynchronous function."""
+
+
+def check_async(func, reason: str):
+    if not inspect.iscoroutinefunction(func):
+        message = f"{reason}. Hint: use `async def` instead of `def`."
+        raise ExpectedAsync(message)
 
 
 # For 3.6 compatibility (only available in 3.7+).

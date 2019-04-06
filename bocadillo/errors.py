@@ -2,6 +2,7 @@ from http import HTTPStatus
 from typing import Any, Dict, Optional, Type, Union
 
 from .app_types import _E, ErrorHandler, HTTPApp
+from .compat import check_async
 from .request import Request
 from .response import Response
 
@@ -99,7 +100,13 @@ class HTTPErrorMiddleware(HTTPApp):
     def add_exception_handler(
         self, exception_class: Type[_E], handler: ErrorHandler
     ) -> None:
-        assert issubclass(exception_class, BaseException)
+        assert issubclass(
+            exception_class, BaseException
+        ), f"expected an exception class, not {type(exception_class)}"
+        check_async(
+            handler,
+            reason=f"error handler '{handler.__name__}' must be asynchronous",
+        )
         self._exception_handlers[exception_class] = handler
 
     def _get_exception_handler(self, exc: _E) -> Optional[ErrorHandler]:
