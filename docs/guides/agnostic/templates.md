@@ -56,13 +56,13 @@ templates = Templates(app)
 
 ```python
 async def post_detail(req, res):
-    res.html = templates.render("index.html", title="Hello, Bocadillo!")
+    res.html = await templates.render("index.html", title="Hello, Bocadillo!")
 ```
 
 - Context variables can also be given as a dictionary:
 
 ```python
-templates.render("index.html", {"title": "Hello, Bocadillo!"})
+await templates.render("index.html", {"title": "Hello, Bocadillo!"})
 ```
 
 - You can render a template directly from a string:
