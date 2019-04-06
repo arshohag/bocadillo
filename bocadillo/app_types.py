@@ -1,4 +1,4 @@
-from typing import Any, Awaitable, Callable, MutableMapping, Union, TypeVar
+from typing import Any, Awaitable, Callable, MutableMapping, TypeVar
 
 from .request import Request
 from .response import Response
