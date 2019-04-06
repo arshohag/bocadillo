@@ -3,12 +3,26 @@ from contextlib import contextmanager
 
 import pytest
 
-from bocadillo import App, Middleware, HTTPError
+from bocadillo import App, ExpectedAsync, HTTPError, Middleware
+
+
+def test_async_check(app):
+    with pytest.raises(ExpectedAsync):
+
+        class BeforeMiddleware(Middleware):
+            def before_dispatch(self):
+                pass
+
+    with pytest.raises(ExpectedAsync):
+
+        class AfterMiddleware(Middleware):
+            def before_dispatch(self):
+                pass
 
 
 @contextmanager
 def build_middleware(
-    expect_kwargs=None, sync=False, expect_call_after=True, old_style=False
+    expect_kwargs=None, expect_call_after=True, old_style=False
 ):
     called = {"before": False, "after": False}
     kwargs = None
