@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
 from .app_types import ASGIApp, ASGIAppInstance, HTTPApp, Scope
-from .compat import call_async
 from .request import Request
 from .response import Response
 
@@ -73,18 +72,13 @@ class Middleware(HTTPApp):
         # Returns
         res: a #::bocadillo.response#Response object.
         """
-        before_res: Optional[Response] = await call_async(  # type: ignore
-            self.before_dispatch, req, res
-        )
-        if before_res:
+        before_res: Optional[Response] = await self.before_dispatch(req, res)
+        if before_res is not None:
             return before_res
 
         res = await self.inner(req, res)
 
-        res = (
-            await call_async(self.after_dispatch, req, res)  # type: ignore
-            or res
-        )
+        res = (await self.after_dispatch(req, res)) or res
 
         return res
 
