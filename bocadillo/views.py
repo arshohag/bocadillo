@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Type, Union
 
 from . import injection
 from .app_types import Handler
-from .compat import camel_to_snake
+from .compat import camel_to_snake, check_async
 from .constants import ALL_HTTP_METHODS
 from .converters import ViewConverter, convert_arguments
 
@@ -76,8 +76,20 @@ class View:
 
     @classmethod
     def create(
-        cls: Type["View"], name: str, handlers: Dict[str, Handler]
+        cls: Type["View"],
+        name: str,
+        handlers: Dict[str, Handler],
+        class_based: bool,
     ) -> "View":
+        for method, handler in handlers.items():
+            full_name = f"{name}.{method.lower()}" if class_based else name
+            check_async(
+                handler, reason=(f"view '{full_name}()' must be asynchronous")
+            )
+
+        if class_based:
+            name = camel_to_snake(name)
+
         copy_get_to_head = "get" in handlers and "head" not in handlers
         if copy_get_to_head:
             handlers["head"] = handlers["get"]
@@ -127,7 +139,7 @@ def from_handler(handler: Handler, methods: MethodsParam = None) -> View:
     else:
         methods = [m.lower() for m in methods]
     handlers = {method: handler for method in methods}
-    return View.create(handler.__name__, handlers)
+    return View.create(handler.__name__, handlers, class_based=False)
 
 
 def from_obj(obj: Any) -> View:
@@ -141,8 +153,7 @@ def from_obj(obj: Any) -> View:
     view: a #::bocadillo.views#View instance.
     """
     handlers = get_handlers(obj)
-    name = camel_to_snake(obj.__class__.__name__)
-    return View.create(name, handlers)
+    return View.create(obj.__class__.__name__, handlers, class_based=True)
 
 
 def get_handlers(obj: Any) -> Dict[str, Handler]:

@@ -15,7 +15,7 @@ def test_async_check(app):
     def handle_key_error(req, res, params):
         pass
 
-    with pytest.raises(ExpectedAsync) as ctx:
+    with pytest.raises(ExpectedAsync):
         app.add_error_handler(KeyError, handle_key_error)
 
 
