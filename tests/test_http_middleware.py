@@ -16,7 +16,7 @@ def test_async_check(app):
     with pytest.raises(ExpectedAsync):
 
         class AfterMiddleware(Middleware):
-            def before_dispatch(self):
+            def after_dispatch(self):
                 pass
 
 
