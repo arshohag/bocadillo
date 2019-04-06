@@ -1,25 +1,5 @@
 from typing import Any, Optional
 
-from starlette.config import Config as _Config, environ as _environ
-
-
-class Config(_Config):
-    """A settings derivation helper.
-
-    This is a direct subclass of
-    [`starlette.config.Config`](https://www.starlette.io/config/).
-
-    # Example
-
-    ```python
-    # settings.py
-    from bocadillo import Config
-
-    config = Config()
-    DEBUG = config("DEBUG", cast=bool, default=False)
-    ```
-    """
-
 
 class SettingsError(Exception):
     """Raised when a setting is missing or has an invalid value."""
@@ -86,4 +66,3 @@ class LazySettings:
 
 
 settings = LazySettings()  # pylint: disable=invalid-name
-environ = _environ  # pylint: disable=invalid-name

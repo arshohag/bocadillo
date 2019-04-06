@@ -1,5 +1,5 @@
 from .applications import App
-from .config import Config, environ, settings, SettingsError
+from .config import settings, SettingsError
 from .errors import HTTPError
 from .middleware import ASGIMiddleware, Middleware
 from .injection import discover_providers, provider, useprovider
