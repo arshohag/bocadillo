@@ -48,7 +48,7 @@ def test_custom_error_handler(app: App, exception_cls):
     called = False
 
     @app.error_handler(KeyError)
-    def on_key_error(req, res, exc):
+    async def on_key_error(req, res, exc):
         nonlocal called
         res.text = "Oops!"
         called = True

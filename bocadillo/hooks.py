@@ -2,7 +2,6 @@ import inspect
 from functools import wraps
 from typing import Callable, cast, Dict, Union, Awaitable, Type
 
-from .compat import call_async
 from .request import Request
 from .response import Response
 from .routing import HTTPRoute
@@ -41,9 +40,7 @@ class Hooks:
     ):
         # Enclose args and kwargs
         async def hook_func(req: Request, res: Response, params: dict):
-            await call_async(  # type: ignore
-                hook, req, res, params, *args, **kwargs
-            )
+            await hook(req, res, params, *args, **kwargs)
 
         def decorator(handler: Union[Type[View], Handler]):
             """Attach the hook to the given handler."""
@@ -70,14 +67,14 @@ def _with_hook(hook_type: str, func: HookFunction, handler: Handler):
             req, res = args[1:3]
         assert isinstance(req, Request)
         assert isinstance(res, Response)
-        await call_async(func, req, res, kw)
+        await func(req, res, kw)
 
     if hook_type == BEFORE:
 
         @wraps(handler)
         async def with_before_hook(*args, **kwargs):
             await call_hook(args, kwargs)
-            await call_async(handler, *args, **kwargs)
+            await handler(*args, **kwargs)
 
         return with_before_hook
 
@@ -85,13 +82,13 @@ def _with_hook(hook_type: str, func: HookFunction, handler: Handler):
 
     @wraps(handler)
     async def with_after_hook(*args, **kwargs):
-        await call_async(handler, *args, **kwargs)
+        await handler(*args, **kwargs)
         await call_hook(args, kwargs)
 
     return with_after_hook
 
 
 # Pre-bind to module
-hooks = Hooks()
-before = hooks.before
-after = hooks.after
+_HOOKS = Hooks()
+before = _HOOKS.before
+after = _HOOKS.after
